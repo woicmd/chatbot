@@ -1,0 +1,101 @@
+chatbot/
+├── backend/
+│   ├── app/
+│   │   ├── adapters/
+│   │   │   └── llm.py
+│   │   │
+│   │   ├── agents/
+│   │   │   ├── architect.py
+│   │   │   ├── coder.py
+│   │   │   ├── debugger.py
+│   │   │   ├── explainer.py
+│   │   │   ├── refactorer.py
+│   │   │   ├── researcher.py
+│   │   │   └── router.py
+│   │   │
+│   │   ├── api/
+│   │   │   ├── auth.py
+│   │   │   └── chat.py
+│   │   │
+│   │   ├── core/
+│   │   │   ├── config.py
+│   │   │   ├── diff_applier.py
+│   │   │   └── logger.py
+│   │   │
+│   │   ├── memory/
+│   │   │   └── store.py
+│   │   │
+│   │   ├── orchestrator/
+│   │   │   ├── agent.py
+│   │   │   └── graph.py
+│   │   │
+│   │   ├── router/
+│   │   │   └── response_router.py
+│   │   │
+│   │   ├── schemas/
+│   │   │   ├── architect_schema.py
+│   │   │   ├── chat_schema.py
+│   │   │   ├── coder_schema.py
+│   │   │   ├── debugger_schema.py
+│   │   │   ├── diff_schema.py
+│   │   │   ├── researcher_schema.py
+│   │   │   ├── router_schema.py
+│   │   │   └── state_schema.py
+│   │   │
+│   │   ├── tools/
+│   │   │   ├── ast_parser.py
+│   │   │   ├── base_tools.py
+│   │   │   ├── debugger_evaluator.py
+│   │   │   ├── graph_rag.py
+│   │   │   ├── registry.py
+│   │   │   └── sandbox.py
+│   │   │
+│   │   └── main.py
+│   │
+│   ├── .dockerignore
+│   ├── .env
+│   ├── docker-compose.yml
+│   ├── Dockerfile
+│   └── requirements.txt
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── renderers/
+│   │   │   │   ├── ArtifactBlock.jsx
+│   │   │   │   ├── CodeBlock.jsx
+│   │   │   │   ├── DiffViewer.jsx
+│   │   │   │   ├── FilePreview.jsx
+│   │   │   │   ├── MermaidBlock.jsx
+│   │   │   │   └── ReasoningBlock.jsx
+│   │   │   │
+│   │   │   ├── ChatInput.jsx
+│   │   │   ├── Header.jsx
+│   │   │   ├── KeyScreen.jsx
+│   │   │   ├── Message.jsx
+│   │   │   ├── MessageList.jsx
+│   │   │   ├── SettingsPanel.jsx
+│   │   │   └── SidePanel.jsx
+│   │   │
+│   │   ├── hooks/
+│   │   │   └── useSSE.js
+│   │   │
+│   │   ├── lib/
+│   │   │   ├── detectNode.js
+│   │   │   └── parseContent.js
+│   │   │
+│   │   ├── store/
+│   │   │   ├── messages.js
+│   │   │   └── useMessages.js
+│   │   │
+│   │   ├── App.jsx
+│   │   ├── index.css
+│   │   └── main.jsx
+│   │
+│   ├── index.html
+│   ├── package-lock.json
+│   ├── package.json
+│   └── vite.config.js
+
+Get-ChildItem -Recurse -Exclude "dist", "node_modules" | Where-Object { $_.FullName -notmatch "\\node_modules\\" -and $_.FullName -notmatch "\\dist\\" } | Select-Object FullName
+Get-ChildItem -Recurse -Exclude "__pycache__", "venv" | Where-Object { $_.FullName -notmatch "\\venv\\" -and $_.FullName -notmatch "\\__pycache__\\" } | Select-Object FullName

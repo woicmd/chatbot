@@ -1,0 +1,132 @@
+:root {
+  /* ─── Gray Monochrome Palette ─────────────────────────── */
+  --bg-deep:    #0C0C0C;
+  --bg:         #141414;
+  --bg-raised:  #1C1C1C;
+  --bg-hover:   #232323;
+  --border:     #2A2A2A;
+  --border-hi:  #383838;
+
+  --tx:         #D4D4D4;
+  --tx-2:       #8A8A8A;
+  --tx-3:       #555555;
+  --tx-4:       #333333;
+
+  --accent:     #7A7A7A;
+  --accent-hi:  #999999;
+  --accent-soft:#1A1A1A;
+
+  --ok:         #6B8A6B;
+  --ok-bg:      #141814;
+  --err:        #8A6B6B;
+  --err-bg:     #181414;
+
+  /* ─── Typography ──────────────────────────────────────── */
+  --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  /* ─── Spacing ─────────────────────────────────────────── */
+  --content-width: 720px;
+  --radius:     8px;
+  --radius-sm:  4px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg-deep);
+  color: var(--tx);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-hi); }
+* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+/* ─── highlight.js — Vibrant Modern Theme ───────────────── */
+.hljs { background: transparent !important; color: #D4D4D4; }
+.hljs-keyword, .hljs-selector-tag { color: #C792EA; font-weight: 500; }
+.hljs-title, .hljs-title.function_ { color: #82AAFF; }
+.hljs-string, .hljs-attr { color: #C3E88D; }
+.hljs-comment { color: #546E7A; font-style: italic; }
+.hljs-number, .hljs-literal { color: #F78C6C; }
+.hljs-type, .hljs-class { color: #FFCB6B; }
+.hljs-built_in { color: #89DDFF; }
+.hljs-operator { color: #89DDFF; }
+.hljs-variable, .hljs-params { color: #D4D4D4; }
+.hljs-meta { color: #F78C6C; }
+.hljs-regexp { color: #89DDFF; }
+.hljs-tag { color: #F07178; }
+.hljs-name { color: #F07178; }
+.hljs-selector-class { color: #FFCB6B; }
+.hljs-selector-id { color: #82AAFF; }
+.hljs-attribute { color: #FFCB6B; }
+.hljs-symbol { color: #C792EA; }
+.hljs-link { color: #82AAFF; text-decoration: underline; }
+.hljs-addition { color: #C3E88D; background: rgba(195, 232, 141, 0.05); }
+.hljs-deletion { color: #F07178; background: rgba(240, 113, 120, 0.05); }
+.hljs-section { color: #82AAFF; font-weight: 600; }
+.hljs-property { color: #80CBC4; }
+.hljs-subst { color: #D4D4D4; }
+.hljs-formula { color: #C792EA; }
+.hljs-template-variable { color: #F07178; }
+.hljs-template-tag { color: #C792EA; }
+
+/* ─── Animations ────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0; }
+}
+
+.msg-enter {
+  animation: fadeUp 0.25s ease-out forwards;
+}
+
+
+
+/* ─── Side Panel Transitions ────────────────────────────── */
+.panel-enter {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+.panel-exit {
+  animation: slideOut 0.25s ease-in forwards;
+}
+
+/* ─── Selection ─────────────────────────────────────────── */
+::selection {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--tx);
+}

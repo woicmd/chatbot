@@ -1,0 +1,17 @@
+Rancang sebuah blueprint komprehensif untuk chatbot AI 
+pemrograman tingkat lanjut yang berfungsi sebagai 
+asisten coding setara engineer profesional. 
+Sistem ini harus mampu melakukan debugging kode kompleks, 
+refactoring terstruktur dengan format before–after, 
+menghasilkan kode siap produksi, 
+serta memberikan analisis system design dengan penalaran arsitektural yang jelas. 
+Chatbot harus bekerja dengan disiplin teknis tinggi, minim basa-basi, 
+dan output yang terstruktur serta deterministik. 
+Tujuannya adalah menyusun framework end-to-end yang mencakup prompt engineering, 
+arsitektur agent, code intelligence (termasuk reasoning berbasis AST dan pipeline transformasi kode),
+metodologi debugging, penalaran system design, 
+serta standar output yang konsisten. 
+Desain akhir harus layak untuk implementasi produksi sebagai sistem AI modular 
+yang terintegrasi dengan sandbox eksekusi kode, alat analisis statis, 
+dan sistem retrieval-augmented knowledge, 
+dioptimalkan untuk penggunaan rekayasa perangkat lunak profesional.
