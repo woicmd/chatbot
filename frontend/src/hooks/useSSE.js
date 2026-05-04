@@ -33,38 +33,31 @@ export function useSSE() {
     let thinkingStartTime = null
     let thinkingDuration = 0
 
-    // Adaptive typewriter — adjusts speed based on buffered text
     function tick() {
       const target = fullTextRef.current.length
 
-      // Continuously update thinking duration in the store even if no new text arrives
-      if (thinkingStartTime && !thinkingDuration) {
-        const currentDur = Math.round((Date.now() - thinkingStartTime) / 1000)
-        const lastMsg = store.getState().getHistory().slice(-1)[0]
-        if (lastMsg && currentDur > (lastMsg.thinkingDuration || 0)) {
-          store.getState().updateLastAssistant(lastMsg.content, currentDur)
-        }
-      }
-
       if (displayedLen < target) {
         const buffered = target - displayedLen
-        // Min 1 char, max 8 chars per frame for a smooth, readable typing effect
         const speed = Math.max(1, Math.min(8, Math.ceil(buffered * 0.05)))
         displayedLen = Math.min(displayedLen + speed, target)
         const current = fullTextRef.current.slice(0, displayedLen)
 
-        // Pass the already known thinking duration when updating text
-        let currentDur = thinkingDuration
-        if (thinkingStartTime && !thinkingDuration) {
-          currentDur = Math.round((Date.now() - thinkingStartTime) / 1000)
-        }
-        store.getState().updateLastAssistant(current, currentDur)
+        store.getState().updateLastAssistant(current)
 
         if (!store.getState().activeNode && current.length > 10) {
           store.getState().setActiveNode(detectNode(current))
         }
       } else if (fetchDone) {
         if (!store.getState().activeNode) store.getState().setActiveNode('respond')
+        
+        console.log('[tick] fetchDone — thinkingDuration:', thinkingDuration)
+
+        store.getState().updateMessageMeta(
+          store.getState().activeNode,
+          store.getState().elapsedMs,
+          thinkingDuration
+        )
+
         store.getState().setStreaming(false)
         abortRef.current = null
         rafRef.current = null
@@ -158,27 +151,30 @@ export function useSSE() {
       fetchDone = true
       document.removeEventListener('visibilitychange', onVisibilityChange)
 
-      // Flush if rAF was paused (background tab)
+      // Handle background tab — flush teks langsung tanpa typewriter
       if (document.visibilityState !== 'visible' && displayedLen < fullTextRef.current.length) {
         displayedLen = fullTextRef.current.length
+        store.getState().updateLastAssistant(fullTextRef.current)
+        if (!store.getState().activeNode) {
+          store.getState().setActiveNode(detectNode(fullTextRef.current) || 'respond')
+        }
+        // Flush semua meta sekaligus
+        store.getState().updateMessageMeta(
+          store.getState().activeNode,
+          store.getState().elapsedMs,
+          thinkingDuration
+        )
         store.getState().updateLastAssistant(
           fullTextRef.current,
           thinkingDuration,
           reasoningDetailsRef.current || undefined
         )
-        if (!store.getState().activeNode) {
-          store.getState().setActiveNode(detectNode(fullTextRef.current) || 'respond')
-        }
-        store.getState().updateMessageMeta(store.getState().activeNode, store.getState().elapsedMs, thinkingDuration)
         store.getState().setStreaming(false)
         abortRef.current = null
         if (rafRef.current) {
           cancelAnimationFrame(rafRef.current)
           rafRef.current = null
         }
-      } else {
-        // Even if visible, make sure we persist the meta data
-        store.getState().updateMessageMeta(store.getState().activeNode, store.getState().elapsedMs, thinkingDuration)
       }
     } catch (err) {
       document.removeEventListener('visibilitychange', onVisibilityChange)

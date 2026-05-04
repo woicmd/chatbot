@@ -34,11 +34,16 @@ const s = {
 }
 
 export function ReasoningBlock({ content, isThinking, savedDuration }) {
-  // If we have a saved duration from localStorage (after refresh), use it
-  // Otherwise start counting from 0
-  const [elapsed, setElapsed] = useState(() => savedDuration || 0)
+  const [elapsed, setElapsed] = useState(0)
   const [isOpen, setIsOpen] = useState(isThinking)
   const wasThinking = useRef(isThinking)
+
+  // Sync dari savedDuration — reaktif, bukan frozen di mount
+  useEffect(() => {
+    if (!isThinking && savedDuration) {
+      setElapsed(savedDuration)
+    }
+  }, [savedDuration, isThinking])
 
   // Count up while thinking
   useEffect(() => {
