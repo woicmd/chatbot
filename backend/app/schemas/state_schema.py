@@ -1,4 +1,4 @@
-# app/schemas/state.py
+# app/schemas/state_schema.py
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from app.schemas.diff_schema import DiffBlock
@@ -12,7 +12,6 @@ class ExecutionTrace(BaseModel):
 
 
 class EpisodicMemory(BaseModel):
-    """Stores failure summaries for Reflexion pipeline."""
     attempt: int
     node_name: str
     failure_summary: str
@@ -21,7 +20,7 @@ class EpisodicMemory(BaseModel):
 class AgentState(BaseModel):
     messages: List[Dict[str, Any]]
     active_node: str = "router"
-    next_node: str = "router"                          # FIX: was "end" → graph never ran
+    next_node: str = "router"
     execution_trace: List[ExecutionTrace] = Field(default_factory=list)
     ast_context: Optional[Dict[str, Any]] = None
     diff_payload: Optional[List[DiffBlock]] = None
@@ -29,3 +28,4 @@ class AgentState(BaseModel):
     reflexion_attempt: int = 0
     visited_nodes: List[str] = Field(default_factory=list)
     api_key: Optional[str] = None
+    thinking_mode: bool = False

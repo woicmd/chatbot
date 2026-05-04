@@ -7,7 +7,6 @@ from openai import AsyncOpenAI
 from app.core.config import OPENROUTER_API_KEY, MODEL, FAST_MODEL, MAX_TOKENS, TEMPERATURE, TOP_P, VISION_MODEL
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1"
-
 T = TypeVar("T", bound=BaseModel)
 
 def _resolve_key(api_key: Optional[str] = None) -> str:
@@ -16,7 +15,7 @@ def _resolve_key(api_key: Optional[str] = None) -> str:
         provided = ""
     key = provided or OPENROUTER_API_KEY
     if not key:
-        raise RuntimeError("No API key available. Provide one via login or set OPENROUTER_API_KEY env var.")
+        raise RuntimeError("No API key available.")
     return key.strip()
 
 def get_client(api_key: Optional[str] = None) -> AsyncOpenAI:
@@ -35,11 +34,7 @@ def extract_text_content(content: Any) -> str:
     if isinstance(content, str):
         return content
     if isinstance(content, list):
-        text_parts = []
-        for part in content:
-            if part.get("type") == "text":
-                text_parts.append(part.get("text", ""))
-        return "\n\n".join(text_parts)
+        return "\n\n".join(p.get("text", "") for p in content if p.get("type") == "text")
     return str(content)
 
 def _sanitize_messages(messages: list) -> list:
@@ -58,8 +53,20 @@ def _sanitize_messages(messages: list) -> list:
             sanitized.append({"role": msg["role"], "content": content})
     return sanitized
 
+def _has_image_in_last_user_msg(messages: list) -> bool:
+    """
+    FIX: Only check the LAST user message for images.
+    Previously checked ALL messages → kept using VISION_MODEL after image was gone.
+    """
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            content = msg.get("content", "")
+            if isinstance(content, list):
+                return any(p.get("type") == "image_url" for p in content)
+            return False  # last user msg has no image
+    return False
+
 def _extract_reasoning(message) -> str:
-    """Extract reasoning/thinking text from a non-streaming response message."""
     if hasattr(message, 'reasoning_content') and message.reasoning_content:
         return message.reasoning_content
     if hasattr(message, 'model_extra') and message.model_extra:
@@ -72,18 +79,22 @@ def _extract_reasoning(message) -> str:
     return ""
 
 def _wrap_thinking(reasoning: str, content: str) -> str:
-    """Prepend <think> block to content if reasoning exists."""
     if reasoning and reasoning.strip():
         return f"<think>\n{reasoning.strip()}\n</think>\n\n{content}"
     return content
 
+def _strip_think_from_content(text: str) -> str:
+    """Strip any <think> tags model embedded directly in delta.content."""
+    # Remove complete think blocks
+    text = re.sub(r'<think>[\s\S]*?</think>', '', text, flags=re.IGNORECASE)
+    # Remove stray open/close tags
+    text = re.sub(r'</?think>', '', text, flags=re.IGNORECASE)
+    return text
+
 async def generate_fast(messages: list, api_key: Optional[str] = None) -> str:
-    """Untuk routing/klasifikasi — pakai FAST_MODEL, max 50 token, deterministik."""
     messages = _sanitize_messages(messages)
     client = get_client(api_key)
-
-    print(f"[LLM] generate_fast using model: {FAST_MODEL}", flush=True)
-
+    print(f"[LLM] generate_fast model: {FAST_MODEL}", flush=True)
     response = await client.chat.completions.create(
         model=FAST_MODEL,
         messages=messages,
@@ -98,18 +109,12 @@ async def generate_plan(
     api_key: Optional[str] = None,
     return_reasoning: bool = False
 ) -> Any:
-    """Untuk semua agent skill — pakai MODEL atau VISION_MODEL jika ada gambar."""
     messages = _sanitize_messages(messages)
     client = get_client(api_key)
 
-    has_image = any(
-        isinstance(msg.get("content"), list) and
-        any(p.get("type") == "image_url" for p in msg["content"])
-        for msg in messages
-    )
+    has_image = _has_image_in_last_user_msg(messages)
     selected_model = VISION_MODEL if has_image else MODEL
-
-    print(f"[LLM] generate_plan using model: {selected_model} (has_image: {has_image})", flush=True)
+    print(f"[LLM] generate_plan model: {selected_model} (has_image: {has_image})", flush=True)
 
     payload = {
         "model": selected_model,
@@ -122,10 +127,9 @@ async def generate_plan(
     if schema:
         schema_json = json.dumps(schema.model_json_schema(), indent=2)
         instruction = (
-            f"\n\nCRITICAL: You MUST return ONLY a valid JSON object matching this schema. "
-            f"Do NOT wrap in ```json markdown blocks. Just raw JSON.\n\nSchema:\n{schema_json}"
+            f"\n\nCRITICAL: Return ONLY a valid JSON object matching this schema. "
+            f"No markdown blocks. Raw JSON only.\n\nSchema:\n{schema_json}"
         )
-
         if messages and messages[-1]["role"] in ("user", "system"):
             last_content = messages[-1]["content"]
             if isinstance(last_content, list):
@@ -134,7 +138,6 @@ async def generate_plan(
                 messages[-1]["content"] = last_content + instruction
         else:
             messages.append({"role": "user", "content": instruction})
-
         payload["response_format"] = {"type": "json_object"}
 
     try:
@@ -159,20 +162,15 @@ async def generate_plan(
         if text.endswith("```"):
             text = text[:-3]
         text = text.strip()
-
         result = schema.model_validate_json(text)
-        if return_reasoning:
-            return result, reasoning
-        return result
+        return (result, reasoning) if return_reasoning else result
 
     try:
         result = json.loads(text)
     except Exception:
         result = {"action": "respond", "output": text}
 
-    if return_reasoning:
-        return result, reasoning
-    return result
+    return (result, reasoning) if return_reasoning else result
 
 
 async def stream_generate(
@@ -180,29 +178,13 @@ async def stream_generate(
     api_key: Optional[str] = None,
     model: Optional[str] = None
 ):
-    """
-    Untuk streaming output ke client.
-    model override: eksplisit > VISION_MODEL (jika ada gambar) > MODEL default.
-    """
     messages = _sanitize_messages(messages)
     client = get_client(api_key)
 
-    has_image = any(
-        isinstance(msg.get("content"), list) and
-        any(p.get("type") == "image_url" for p in msg["content"])
-        for msg in messages
-    )
-
-    for idx, msg in enumerate(messages):
-        c = msg.get("content", "")
-        if isinstance(c, list):
-            types = [p.get("type") for p in c]
-            print(f"[DEBUG stream_generate] msg[{idx}] role={msg['role']} content=LIST types={types}", flush=True)
-        else:
-            print(f"[DEBUG stream_generate] msg[{idx}] role={msg['role']} content=STR len={len(c)}", flush=True)
-
+    # FIX: only check last user message for image
+    has_image = _has_image_in_last_user_msg(messages)
     selected_model = model or (VISION_MODEL if has_image else MODEL)
-    print(f"[LLM] stream_generate using model: {selected_model} (has_image: {has_image})", flush=True)
+    print(f"[LLM] stream_generate model: {selected_model} (has_image: {has_image})", flush=True)
 
     response = await client.chat.completions.create(
         model=selected_model,
@@ -220,7 +202,6 @@ async def stream_generate(
     async for chunk in response:
         if not chunk.choices:
             continue
-
         delta = chunk.choices[0].delta
 
         r_tok = None
@@ -245,7 +226,11 @@ async def stream_generate(
             if in_reasoning:
                 yield "\n</think>\n\n"
                 in_reasoning = False
-            yield delta.content
+            # FIX: strip any <think> tags model embedded in content directly
+            # prevents double thinking blocks on frontend
+            clean = _strip_think_from_content(delta.content)
+            if clean:
+                yield clean
 
     if in_reasoning:
         yield "\n</think>\n\n"
